@@ -8,7 +8,9 @@ ps. add Admin Google cloud storage role to service account
 
 ```
 
-2. Create bucket
+2. Set env GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcs-key.json
+
+3. Create bucket
 ```
  POST /bucket
  body {
@@ -16,7 +18,7 @@ ps. add Admin Google cloud storage role to service account
  }
 ```
 
-3. Add cors to bucket
+4. Add cors to bucket
 ```
  POST /bucket/<bucketName>
  body {
