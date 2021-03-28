@@ -10,7 +10,19 @@ ps. add Admin Google cloud storage role to service account
 
 2. Set env GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcs-key.json
 
-3. Create bucket (also create on front-end)
+3. Install dependencies
+```
+npm install
+```
+
+4. Run server
+```
+npm run serve
+```
+
+-- optional steps --
+
+5. Create bucket (also create on front-end)
 ```
  POST /bucket
  body {
@@ -18,12 +30,10 @@ ps. add Admin Google cloud storage role to service account
  }
 ```
 
-4. Add cors to bucket (optinal, if cannot upload image)
+6. Add cors to bucket (optinal, if cannot upload image)
 ```
  POST /bucket/<bucketName>
  body {
      "origin" : https://<host>  
  }
 ```
-### ---- done ----
-### backend ready to use
