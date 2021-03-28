@@ -34,6 +34,6 @@ npm run serve
 ```
  POST /bucket/<bucketName>
  body {
-     "origin" : https://<host>  
+     "origin" : origin  
  }
 ```
