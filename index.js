@@ -8,10 +8,6 @@ app.use(bodyParser.json())
 const port = 3000
 
 const storage = new Storage()
-// const bucketName = 'portfolio-upload-image'
-// contentType and objectPath values should be sent from front-end
-// const contentType = "image/jpeg"
-// const objectPath = "Screen Shot 2564-03-11 at 12.00.38.png"
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*')
@@ -146,6 +142,15 @@ app.post('/bucket', async (req, res) => {
     return res.send({
         status: 200,
         data: bucket
+    })
+})
+
+app.get('/bucket', async (req,res) => {
+    const [buckets] = await storage.getBuckets();
+
+    return res.send({
+        status: 200,
+        data: buckets.map(b => b.name)
     })
 })
 

@@ -18,7 +18,7 @@ ps. add Admin Google cloud storage role to service account
  }
 ```
 
-4. Add cors to bucket
+4. Add cors to bucket (optinal, if cannot upload image)
 ```
  POST /bucket/<bucketName>
  body {
