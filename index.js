@@ -8,10 +8,10 @@ app.use(bodyParser.json())
 const port = 3000
 
 const storage = new Storage()
-const bucketName = 'portfolio-upload-image'
+// const bucketName = 'portfolio-upload-image'
 // contentType and objectPath values should be sent from front-end
-const contentType = "image/jpeg"
-const objectPath = "test-image-1.jpeg"
+// const contentType = "image/jpeg"
+// const objectPath = "Screen Shot 2564-03-11 at 12.00.38.png"
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*')
@@ -20,19 +20,20 @@ app.use((req, res, next) => {
     return next()
 })
 
-// app.get('/signed-url/test', async (req, res) => {
-//     // await storage.bucket(bucketName).file(objectPath).makePrivate()
-//     // configureBucketCors().catch(console.error)
-//     let files = await getListImages()
-//     return res.send({
-//         status: 200,
-//         data: files
-//     })
 
-// })
 
-app.get('/signed-url/download', async (req, res) => {
-    const url = await getDownloadSignedURL()
+
+app.post('/bucket/:bucketName/signed-url/download', async (req, res) => {
+    let body = req.body
+    if (!('fileName' in body)) {
+        res.status(400)
+        return res.send({
+            status: 400,
+            message: 'fileName missing.'
+        })
+    }
+
+    const url = await getDownloadSignedURL(body.fileName, req.params.bucketName)
         .catch(error => {
             res.status(500)
             return res.send({
@@ -47,17 +48,17 @@ app.get('/signed-url/download', async (req, res) => {
 
 })
 
-app.post('/signed-url/upload', async (req, res) => {
+app.post('/bucket/:bucketName/signed-url/upload', async (req, res) => {
     let body = req.body
-    if(!('filePath' in body)){
+    if (!('fileName' in body)) {
         res.status(400)
         return res.send({
             status: 400,
-            message: 'filePath missing.'
+            message: 'fileName missing.'
         })
     }
 
-    if(!('fileType' in body)){
+    if (!('fileType' in body)) {
         res.status(400)
         return res.send({
             status: 400,
@@ -65,7 +66,8 @@ app.post('/signed-url/upload', async (req, res) => {
         })
     }
 
-    const url = await getUploadSignedURL(body.filePath,body.fileType)
+
+    const url = await getUploadSignedURL(body.fileName, body.fileType, req.params.bucketName)
         .catch(error => {
             res.status(500)
             return res.send({
@@ -80,8 +82,27 @@ app.post('/signed-url/upload', async (req, res) => {
 
 })
 
-app.post('/bucket/cors', async (req, res) => {
-    if(!('origin' in req.body)){
+app.get('/bucket/:bucketName/images', async (req, res) => {
+    let files = await getListImages(req.params.bucketName)
+    let filesList = []
+    for (let i = 0; i < files.length; i++) {
+        let signedUrl = await getDownloadSignedURL(files[i].metadata.name, req.params.bucketName)
+        filesList.push({
+            name: files[i].metadata.name,
+            updated: files[i].metadata.updated,
+            size: files[i].metadata.size,
+            url: signedUrl
+        })
+    }
+
+    return res.send({
+        status: 200,
+        data: filesList
+    })
+})
+
+app.post('/bucket/:bucketName/cors', async (req, res) => {
+    if (!('origin' in req.body)) {
         res.status(400)
         return res.send({
             status: 400,
@@ -89,7 +110,13 @@ app.post('/bucket/cors', async (req, res) => {
         })
     }
 
-    await configureBucketCors(req.body.origin).catch(console.error)
+    await configureBucketCors(req.params.bucketName, req.body.origin).catch(error => {
+        res.status(500)
+        return res.send({
+            status: 400,
+            message: error
+        })
+    })
     return res.send({
         status: 200,
         message: 'done'
@@ -97,26 +124,45 @@ app.post('/bucket/cors', async (req, res) => {
 
 })
 
+app.post('/bucket', async (req, res) => {
+    if (!('bucketName' in req.body)) {
+        res.status(400)
+        return res.send({
+            status: 400,
+            message: 'bucketName missing'
+        })
+    }
 
-async function getDownloadSignedURL() {
+    const [bucket] = await storage.createBucket(req.body.bucketName, {
+        location: 'ASIA'
+    });
+
+    return res.send({
+        status: 200,
+        data: bucket
+    })
+})
+
+
+async function getDownloadSignedURL(fileName, bucketName) {
     // These options will allow temporary read access to the file
     const options = {
         version: 'v4',
         action: 'read',
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+        expires: Date.now() + 1 * 60 * 1000, // 1 minutes
     };
 
     // Get a v4 signed URL for reading the file
     const [url] = await storage
         .bucket(bucketName)
-        .file(objectPath)
+        .file(fileName)
         .getSignedUrl(options);
-    console.log(`curl '${url}'`);
+    // console.log(`curl '${url}'`);
     return url
 }
 
 
-async function getUploadSignedURL(filePath, fileType) {
+async function getUploadSignedURL(fileName, fileType, bucketName) {
     const options = {
         version: 'v4',
         action: 'write',
@@ -125,18 +171,18 @@ async function getUploadSignedURL(filePath, fileType) {
     };
     const [url] = await storage
         .bucket(bucketName)
-        .file(filePath)
+        .file(fileName)
         .getSignedUrl(options);
 
-    console.log(
-        "curl -X PUT -H 'Content-Type: image/jpeg' " +
-        `--upload-file ${filePath} '${url}'`
-    );
+    // console.log(
+    //     "curl -X PUT -H 'Content-Type: image/jpeg' " +
+    //     `--upload-file ${fileName} '${url}'`
+    // );
 
     return url
 }
 
-async function configureBucketCors(origin) {
+async function configureBucketCors(bucketName, origin) {
     await storage.bucket(bucketName).setCorsConfiguration([
         {
             maxAgeSeconds: 3600,
@@ -151,18 +197,10 @@ async function configureBucketCors(origin) {
         ${'Content-Type'} responses across origins`);
 }
 
-// async function getListImages() { 
-//     const [files] = await storage.bucket(bucketName).getFiles();
-//     return files
-// }
-
-
-
-
-// async function createBucket() {
-//     const bucket = await storage.createBucket('test',)
-//     return bucket
-// }
+async function getListImages(bucketName) {
+    const [files] = await storage.bucket(bucketName).getFiles();
+    return files
+}
 
 
 app.get('/', (req, res) => {
