@@ -113,7 +113,7 @@ app.post('/bucket/:bucketName/cors', async (req, res) => {
     await configureBucketCors(req.params.bucketName, req.body.origin).catch(error => {
         res.status(500)
         return res.send({
-            status: 400,
+            status: 500,
             message: error
         })
     })
@@ -135,12 +135,27 @@ app.post('/bucket', async (req, res) => {
 
     const [bucket] = await storage.createBucket(req.body.bucketName, {
         location: 'ASIA'
-    });
+    }).catch(error => {
+        res.status(500)
+        return res.send({
+            status: 500,
+            message: error
+        })
+    })
 
     return res.send({
         status: 200,
         data: bucket
     })
+})
+
+app.get('/bucket/:bucketName/cors', async (req, res) => {
+    const [acls] = await storage.bucket(req.params.bucketName).acl.get();
+    return res.send({
+        status: 200,
+        data: acls
+    })
+
 })
 
 
