@@ -29,18 +29,21 @@ app.post('/bucket/:bucketName/signed-url/download', async (req, res) => {
         })
     }
 
-    const url = await getDownloadSignedURL(body.fileName, req.params.bucketName)
-        .catch(error => {
-            res.status(500)
-            return res.send({
-                status: 500,
-                error: error
-            })
+    try {
+        const url = await getDownloadSignedURL(body.fileName, req.params.bucketName)
+        return res.send({
+            status: 200,
+            url: url
         })
-    return res.send({
-        status: 200,
-        url: url
-    })
+
+    } catch (error) {
+        res.status(500)
+        return res.send({
+            status: 500,
+            error: error
+        })
+    }
+
 
 })
 
@@ -63,18 +66,19 @@ app.post('/bucket/:bucketName/signed-url/upload', async (req, res) => {
     }
 
 
-    const url = await getUploadSignedURL(body.fileName, body.fileType, req.params.bucketName)
-        .catch(error => {
-            res.status(500)
-            return res.send({
-                status: 500,
-                error: error
-            })
+    try {
+        const url = await getUploadSignedURL(body.fileName, body.fileType, req.params.bucketName)
+        return res.send({
+            status: 200,
+            url: url
         })
-    return res.send({
-        status: 200,
-        url: url
-    })
+    } catch (error) {
+        res.status(500)
+        return res.send({
+            status: 500,
+            error: error
+        })
+    }
 
 })
 
@@ -106,17 +110,21 @@ app.post('/bucket/:bucketName/cors', async (req, res) => {
         })
     }
 
-    await configureBucketCors(req.params.bucketName, req.body.origin).catch(error => {
+    try {
+        await configureBucketCors(req.params.bucketName, req.body.origin)
+        return res.send({
+            status: 200,
+            message: 'done'
+        })
+
+    } catch (error) {
         res.status(500)
         return res.send({
             status: 500,
             message: error
         })
-    })
-    return res.send({
-        status: 200,
-        message: 'done'
-    })
+    }
+
 
 })
 
@@ -129,23 +137,28 @@ app.post('/bucket', async (req, res) => {
         })
     }
 
-    const [bucket] = await storage.createBucket(req.body.bucketName, {
-        location: 'ASIA'
-    }).catch(error => {
+    try {
+        const [bucket] = await storage.createBucket(req.body.bucketName, {
+            location: 'ASIA'
+        })
+
+        return res.send({
+            status: 200,
+            data: bucket
+        })
+
+    } catch (error) {
+
         res.status(500)
         return res.send({
             status: 500,
             message: error
         })
-    })
+    }
 
-    return res.send({
-        status: 200,
-        data: bucket
-    })
 })
 
-app.get('/bucket', async (req,res) => {
+app.get('/bucket', async (req, res) => {
     const [buckets] = await storage.getBuckets();
 
     return res.send({
